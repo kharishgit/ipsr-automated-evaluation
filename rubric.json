@@ -1,0 +1,54 @@
+{
+  "total_marks": 100,
+  "threshold": 60,
+
+  "criteria": [
+    {
+    "name": "Total sales calculation",
+    "marks": 15,
+    "description": "Correct calculation of total sales (formula or value acceptable)"
+    },
+    {
+      "name": "AVERAGE calculation",
+      "marks": 10,
+      "description": "Correct use of AVERAGE function"
+    },
+    {
+      "name": "COUNT/COUNTA",
+      "marks": 10,
+      "description": "Correct counting of records"
+    },
+    {
+      "name": "IF function",
+      "marks": 15,
+      "description": "Correct logical categorization (High/Low sales)"
+    },
+    {
+      "name": "LOOKUP function",
+      "marks": 15,
+      "description": "Correct use of VLOOKUP or XLOOKUP"
+    },
+    {
+      "name": "TEXT/CONCAT usage",
+      "marks": 10,
+      "description": "Proper formatting using text functions"
+    },
+    {
+      "name": "Summary section",
+      "marks": 10,
+      "description": "Presence of a clear summary sheet with calculated results"
+    },
+    {
+      "name": "Insights",
+      "marks": 10,
+      "description": "Meaningful interpretation of results"
+    },
+    {
+      "name": "Data handling",
+      "marks": 10,
+      "description": "Dataset is handled correctly without errors"
+    }
+  ],
+
+  "instructions": "Evaluate based on Excel functionality and correctness. Ignore minor grammar issues. Do not give marks if functions are missing or incorrectly applied."
+}

@@ -1,0 +1,50 @@
+# 🔐 Environment variables
+
+.env
+
+# 🐍 Python cache
+
+**pycache**/
+*.py[cod]
+*.pyo
+
+# 📦 Virtual environment
+
+venv/
+env/
+
+# 📊 Output files
+
+output/
+logs/
+
+# 📁 Data folders (optional - keep empty structure only)
+
+final_files/
+Submissions/
+
+# 📄 OS files
+
+.DS_Store
+
+# 📓 Jupyter (if used later)
+
+.ipynb_checkpoints/
+
+# 🔧 VSCode settings (optional)
+
+.vscode/
+
+# 🧪 Temporary Excel files
+
+~$*
+
+# 📦 Build files
+
+dist/
+build/
+*.egg-info/
+
+# 📄 Generated CSVs (optional)
+
+*.csv

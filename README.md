@@ -127,6 +127,14 @@ DEEPSEEK_API_KEY=your_openrouter_key
 
 ## ▶️ How to Run
 
+### Step 0 (Optional): Unzip Moodle download into `Submissions/`
+
+If you downloaded a ZIP from Moodle (for selected students), you can extract it into `Submissions/` first:
+
+```bash
+python3 unzip_submissions.py /path/to/moodle_submissions.zip
+```
+
 ### Step 1: Extract student files
 
 ```bash
@@ -150,6 +158,33 @@ python3 valuation.py
 ```
 output/grades.csv
 ```
+
+---
+
+## 🌐 Run As An API (FastAPI)
+
+This repo also includes a small FastAPI server (`api.py`) that lets you:
+
+1. Upload and validate `rubric.json`
+2. Update `rule_engine.py` using an LLM instruction
+3. Update `prompt_builder.py` using an LLM instruction
+4. Validate everything and run grading, returning `grades.csv`
+
+### Start server
+
+```bash
+pip install -r requirements.txt
+uvicorn api:app --reload --port 8000
+```
+
+### Endpoints
+
+* `POST /rubric/upload` (multipart file field: `file`) → validates schema and writes `rubric.json`
+* `POST /rule-engine/update` (JSON: `{"text": "..."}`) → LLM proposes a new `rule_check()` and updates `rule_engine.py`
+* `POST /prompt-builder/update` (JSON: `{"text": "..."}`) → LLM proposes a new `build_prompt()` and updates `prompt_builder.py`
+* `POST /validate` → checks rubric + imports + prompt sanity
+* `POST /grade/run` → validates + runs grading and returns `grades.csv`
+* `GET /health` → simple health check
 
 ---
 

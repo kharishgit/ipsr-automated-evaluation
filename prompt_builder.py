@@ -2,35 +2,24 @@
 import json
 
 def build_prompt(rubric, student_text, mode="lenient"):
-    
-    if mode == "lenient":
-        instruction = """
-- Focus on insights and observations
-- Ignore grammar and formatting mistakes
-- Reward correct understanding of data
-- Be slightly lenient
-"""
-    else:
-        instruction = """
-- Strictly check data correctness
-- Penalize wrong calculations
-- Ensure proper structure
-- Do not be lenient
-"""
 
     return f"""
-You are a generous grading system.
+You are a fair and liberal grading system evaluating an Excel dashboard assignment.
 
-Instructions:
-{instruction}
+IMPORTANT GUIDELINES:
+- Focus on visible outcomes (tables, summaries, insights)
+- Do NOT expect formulas or pivot tables to be visible
+- If analysis is present, assume correct use of Excel features
+- Reward effort, structure, and insights generously
+- Do NOT be overly strict
+- Avoid giving very low marks unless submission is empty
 
-IMPORTANT:
-- Return ONLY valid JSON
-- Do NOT include explanations or markdown
-- Output must start with {{ and end with }}
-
-- If summary metrics like Total Sales, Average, Count are present, consider calculations as done
-- Do NOT assume functions are missing just because formulas are not visible
+What to look for:
+- Sales analysis by product, city, category, month, and sales rep
+- Presence of dashboard-like structure
+- Charts or summarized outputs (even if not explicitly labeled)
+- Insights and observations
+- Organized layout
 
 Rubric:
 {json.dumps(rubric, indent=2)}
@@ -38,6 +27,6 @@ Rubric:
 Student Submission:
 {student_text}
 
-Output format:
-{{"marks": number, "reason": "ONLY if marks < {rubric['threshold']}, else empty"}}
+Return ONLY valid JSON:
+{{"marks": number, "reason": "short reason only if marks < {rubric['threshold']}"}}
 """

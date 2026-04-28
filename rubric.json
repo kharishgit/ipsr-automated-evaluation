@@ -4,51 +4,56 @@
 
   "criteria": [
     {
-    "name": "Total sales calculation",
-    "marks": 15,
-    "description": "Correct calculation of total sales (formula or value acceptable)"
-    },
-    {
-      "name": "AVERAGE calculation",
-      "marks": 10,
-      "description": "Correct use of AVERAGE function"
-    },
-    {
-      "name": "COUNT/COUNTA",
-      "marks": 10,
-      "description": "Correct counting of records"
-    },
-    {
-      "name": "IF function",
+      "name": "Dashboard Presence",
       "marks": 15,
-      "description": "Correct logical categorization (High/Low sales)"
+      "description": "Presence of a dashboard or summary section with multiple visual elements"
     },
     {
-      "name": "LOOKUP function",
-      "marks": 15,
-      "description": "Correct use of VLOOKUP or XLOOKUP"
-    },
-    {
-      "name": "TEXT/CONCAT usage",
+      "name": "Sales by Product",
       "marks": 10,
-      "description": "Proper formatting using text functions"
+      "description": "Sales analysis by product is present (table/chart/summary)"
     },
     {
-      "name": "Summary section",
+      "name": "Sales by City",
       "marks": 10,
-      "description": "Presence of a clear summary sheet with calculated results"
+      "description": "Sales analysis by city is present"
+    },
+    {
+      "name": "Sales by Category",
+      "marks": 10,
+      "description": "Sales analysis by category is present"
+    },
+    {
+      "name": "Monthly Trend",
+      "marks": 10,
+      "description": "Monthly sales trend is present"
+    },
+    {
+      "name": "Sales by Sales Rep",
+      "marks": 10,
+      "description": "Sales analysis by sales representative is present"
+    },
+    {
+      "name": "Charts / Visualization",
+      "marks": 10,
+      "description": "Presence of charts or visual indicators (even if not perfectly formatted)"
+    },
+    {
+      "name": "Interactivity (Slicers)",
+      "marks": 5,
+      "description": "Evidence of filters, slicers, or segmented views"
     },
     {
       "name": "Insights",
-      "marks": 10,
-      "description": "Meaningful interpretation of results"
+      "marks": 15,
+      "description": "Meaningful observations or interpretations from data"
     },
     {
-      "name": "Data handling",
-      "marks": 10,
-      "description": "Dataset is handled correctly without errors"
+      "name": "Structure & Organization",
+      "marks": 5,
+      "description": "Clear layout, readable structure, and logical grouping"
     }
   ],
 
-  "instructions": "Evaluate based on Excel functionality and correctness. Ignore minor grammar issues. Do not give marks if functions are missing or incorrectly applied."
+  "instructions": "Be liberal in grading. Reward visible effort, dashboard structure, and insights. Do NOT penalize if pivot tables or slicers are not directly visible in extracted text. If charts or summaries are implied, consider them present. Avoid giving very low marks unless submission is empty or clearly incomplete."
 }

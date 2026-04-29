@@ -83,10 +83,26 @@ def main() -> int:
         action="store_true",
         help="Overwrite existing extracted files",
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Delete existing contents of destination folder before extracting",
+    )
     args = parser.parse_args()
+    if args.clean and os.path.isdir(args.out):
+        for name in os.listdir(args.out):
+            full = os.path.join(args.out, name)
+            try:
+                if os.path.isdir(full) and not os.path.islink(full):
+                    import shutil
+
+                    shutil.rmtree(full)
+                else:
+                    os.remove(full)
+            except OSError:
+                pass
     return unzip_to_submissions(args.zip, args.out, overwrite=args.overwrite)
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

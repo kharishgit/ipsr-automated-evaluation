@@ -135,10 +135,34 @@ If you downloaded a ZIP from Moodle (for selected students), you can extract it 
 python3 unzip_submissions.py /path/to/moodle_submissions.zip
 ```
 
+Clean destination first:
+
+```bash
+python3 unzip_submissions.py /path/to/moodle_submissions.zip --clean
+```
+
+### One-command run (ZIP in repo root)
+
+If you place the Moodle ZIP in the repo root, running `valuation.py` will automatically:
+
+1. Unzip into `Submissions/_zip_<zipname>/`
+2. Extract student files into `final_files/`
+3. Grade and write `output/grades.csv`
+
+```bash
+python3 valuation.py
+```
+
 ### Step 1: Extract student files
 
 ```bash
 python3 extract.py
+```
+
+Clean destination first:
+
+```bash
+python3 extract.py --clean
 ```
 
 👉 Moves and renames files into `final_files/`
@@ -184,6 +208,9 @@ uvicorn api:app --reload --port 8000
 * `POST /prompt-builder/update` (JSON: `{"text": "..."}`) → LLM proposes a new `build_prompt()` and updates `prompt_builder.py`
 * `POST /validate` → checks rubric + imports + prompt sanity
 * `POST /grade/run` → validates + runs grading and returns `grades.csv`
+* `POST /question/upload` (JSON: `{"question":"..."}`) → stores the assignment question
+* `POST /moodle/upload-zip` (multipart file field: `file`) → stores the Moodle submissions ZIP
+* `POST /run/from-question-and-zip` (JSON: `{"total_marks":100,"threshold":60}`) → generates `rubric.json`, `rule_engine.py`, `prompt_builder.py`, unzips+extracts submissions, runs grading, returns `grades.csv`
 * `GET /health` → simple health check
 
 ---

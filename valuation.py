@@ -7,10 +7,12 @@ import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 import pandas as pd
-from openai import OpenAI
 from prompt_builder import build_prompt
 from rule_engine import rule_check
 import config
+from extract import extract_student_files
+from unzip_submissions import unzip_to_submissions
+from openai import OpenAI
 
 # ==============================
 # SETUP
@@ -28,27 +30,101 @@ console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger("").addHandler(console)
 
-# ==============================
-# CLIENT (DeepSeek)
-# ==============================
-# client = OpenAI(
-#     api_key=config.DEEPSEEK_API_KEY,
-#     base_url=config.BASE_URL
-# )
-client = OpenAI(
-    api_key=config.DEEPSEEK_API_KEY,
-    base_url=config.BASE_URL,
-    default_headers={
-        "HTTP-Referer": "http://localhost",  # or your app URL
-        "X-Title": "grading-app"
-    }
-)
+def _get_openrouter_client() -> OpenAI:
+    if not config.DEEPSEEK_API_KEY:
+        raise RuntimeError("Missing DEEPSEEK_API_KEY in environment/.env")
+    return OpenAI(
+        api_key=config.DEEPSEEK_API_KEY,
+        base_url=getattr(config, "BASE_URL", "https://openrouter.ai/api/v1"),
+        default_headers={
+            "HTTP-Referer": "http://localhost",
+            "X-Title": "grading-app",
+        },
+    )
+
+
+def _get_gemini_model():
+    if not config.GEMINI_API_KEY:
+        raise RuntimeError("Missing GEMINI_API_KEY in environment/.env")
+    try:
+        import google.generativeai as genai  # type: ignore
+    except Exception as e:
+        raise RuntimeError(f"google-generativeai is not installed: {e}")
+
+    genai.configure(api_key=config.GEMINI_API_KEY)
+    return genai.GenerativeModel(
+        getattr(config, "GEMINI_MODEL", "gemini-2.5-flash"),
+        generation_config={"temperature": 0},
+    )
 # ==============================
 # LOAD RUBRIC
 # ==============================
 def load_rubric():
     with open("rubric.json", "r") as f:
         return json.load(f)
+
+
+def _find_moodle_zip_in_repo_root() -> str | None:
+    if config.MOODLE_ZIP_PATH:
+        return config.MOODLE_ZIP_PATH
+    if not getattr(config, "AUTO_DETECT_MOODLE_ZIP", True):
+        return None
+
+    zips = []
+    for name in os.listdir("."):
+        if name.lower().endswith(".zip") and os.path.isfile(name):
+            zips.append(name)
+    if not zips:
+        return None
+
+    zips.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    return zips[0]
+
+
+def _prepare_inputs() -> None:
+    zip_path = _find_moodle_zip_in_repo_root()
+    if not zip_path:
+        return
+
+    submissions_dir = getattr(config, "SUBMISSIONS_DIR", "Submissions")
+    final_files_dir = getattr(config, "FINAL_FILES_DIR", "final_files")
+
+    # Clean previous runs so each valuation is fresh.
+    _clean_dir_contents(submissions_dir)
+    _clean_dir_contents(final_files_dir)
+
+    zip_stem = os.path.splitext(os.path.basename(zip_path))[0]
+    # Extract into a dedicated subfolder to avoid mixing old submissions.
+    extracted_root = os.path.join(submissions_dir, f"_zip_{zip_stem}")
+    os.makedirs(extracted_root, exist_ok=True)
+
+    logging.info(f"Found Moodle ZIP: {zip_path}. Extracting to: {extracted_root}")
+    rc = unzip_to_submissions(zip_path, extracted_root, overwrite=True)
+    if rc != 0:
+        raise RuntimeError(f"Unzip failed with code {rc}")
+
+    logging.info(f"Extracting student files from {extracted_root} to {final_files_dir}")
+    rc2 = extract_student_files(source_folder=extracted_root, destination_folder=final_files_dir)
+    if rc2 != 0:
+        raise RuntimeError(f"Extraction failed with code {rc2}")
+
+
+def _clean_dir_contents(path: str) -> None:
+    if not os.path.isdir(path):
+        return
+    for name in os.listdir(path):
+        if name in {".gitkeep", ".keep"}:
+            continue
+        full = os.path.join(path, name)
+        try:
+            if os.path.isdir(full) and not os.path.islink(full):
+                import shutil
+
+                shutil.rmtree(full)
+            else:
+                os.remove(full)
+        except Exception as e:
+            logging.warning(f"Failed to delete {full}: {e}")
 
 # ==============================
 # FILE TO TEXT
@@ -146,14 +222,22 @@ def extract_json(text):
 def call_api(prompt):
     for attempt in range(config.MAX_RETRIES):
         try:
-            response = client.chat.completions.create(
-                model=config.MODEL,
-                temperature=0,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            content = response.choices[0].message.content.strip()
-
+            provider = getattr(config, "LLM_PROVIDER", "gemini")
+            if provider == "gemini":
+                model = _get_gemini_model()
+                response = model.generate_content(prompt)
+                content = response.text.strip() if getattr(response, "text", None) else ""
+            else:
+                client = _get_openrouter_client()
+                response = client.chat.completions.create(
+                    model=config.MODEL,
+                    temperature=0,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                content = response.choices[0].message.content.strip()
+            
+            
+            
             # Try direct JSON
             try:
                 return json.loads(content)
@@ -236,6 +320,7 @@ def process_file(file_name, rubric):
 # MAIN
 # ==============================
 def main():
+    _prepare_inputs()
     rubric = load_rubric()
 
     files = [f for f in os.listdir(config.INPUT_FOLDER) if not f.startswith(".")]

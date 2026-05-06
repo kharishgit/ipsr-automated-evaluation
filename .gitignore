@@ -48,3 +48,4 @@ build/
 # 📄 Generated CSVs (optional)
 
 *.csv
+*.zip

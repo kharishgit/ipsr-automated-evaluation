@@ -2,6 +2,7 @@ import os
 import json
 import time
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import fitz  # PyMuPDF
 import pytesseract
@@ -126,6 +127,9 @@ def _clean_dir_contents(path: str) -> None:
         except Exception as e:
             logging.warning(f"Failed to delete {full}: {e}")
 
+# Gate concurrent LLM requests so free-tier quotas don't instantly 429.
+_LLM_SEM = threading.Semaphore(getattr(config, "LLM_MAX_CONCURRENCY", 1))
+
 # ==============================
 # FILE TO TEXT
 # ==============================
@@ -222,19 +226,20 @@ def extract_json(text):
 def call_api(prompt):
     for attempt in range(config.MAX_RETRIES):
         try:
-            provider = getattr(config, "LLM_PROVIDER", "gemini")
-            if provider == "gemini":
-                model = _get_gemini_model()
-                response = model.generate_content(prompt)
-                content = response.text.strip() if getattr(response, "text", None) else ""
-            else:
-                client = _get_openrouter_client()
-                response = client.chat.completions.create(
-                    model=config.MODEL,
-                    temperature=0,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                content = response.choices[0].message.content.strip()
+            with _LLM_SEM:
+                provider = getattr(config, "LLM_PROVIDER", "gemini")
+                if provider == "gemini":
+                    model = _get_gemini_model()
+                    response = model.generate_content(prompt)
+                    content = response.text.strip() if getattr(response, "text", None) else ""
+                else:
+                    client = _get_openrouter_client()
+                    response = client.chat.completions.create(
+                        model=config.MODEL,
+                        temperature=0,
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                    content = response.choices[0].message.content.strip()
             
             
             
@@ -252,8 +257,20 @@ def call_api(prompt):
             logging.warning(f"Invalid JSON response: {content}")
 
         except Exception as e:
-            logging.warning(f"Retry {attempt+1} failed: {e}")
-            time.sleep(2 ** attempt)
+            msg = str(e)
+            logging.warning(f"Retry {attempt+1} failed: {msg}")
+            # Gemini often tells you exactly how long to wait: "Please retry in 54.2s"
+            wait_s = None
+            try:
+                m = re.search(r"Please retry in ([0-9]+(?:\\.[0-9]+)?)s", msg)
+                if m:
+                    wait_s = float(m.group(1))
+            except Exception:
+                wait_s = None
+
+            if wait_s is None:
+                wait_s = 2 ** attempt
+            time.sleep(wait_s)
 
     return {"marks": 0, "reason": "API failure"}
 # ==============================
@@ -291,8 +308,8 @@ def process_file(file_name, rubric):
     ai_marks = ai_result.get("marks", 0)
     reason = ai_result.get("reason", "")
 
-    # 🔁 Re-evaluate if marks are low
-    if ai_marks < 60:
+    # 🔁 Re-evaluate if marks are low (this multiplies API usage)
+    if getattr(config, "ENABLE_REEVALUATION", True) and ai_marks < 60:
         logging.info(f"Re-evaluating {student} due to low score: {ai_marks}")
         
         scores = [ai_marks]

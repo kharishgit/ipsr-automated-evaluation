@@ -35,3 +35,11 @@ SUBMISSIONS_DIR = "Submissions"
 FINAL_FILES_DIR = "final_files"
 AUTO_DETECT_MOODLE_ZIP = True
 MOODLE_ZIP_PATH = ""  # If set, valuation.py uses this path instead of auto-detecting.
+
+# LLM throttling (important for Gemini free-tier quotas/rate limits).
+# This limits how many concurrent LLM API calls can run even if MAX_WORKERS is higher.
+LLM_MAX_CONCURRENCY = int(os.getenv("LLM_MAX_CONCURRENCY") or "1")
+
+# Re-evaluation can multiply API usage (low scores trigger extra calls).
+# Set to 0/false in env to disable.
+ENABLE_REEVALUATION = (os.getenv("ENABLE_REEVALUATION") or "1") not in {"0", "false", "False"}
